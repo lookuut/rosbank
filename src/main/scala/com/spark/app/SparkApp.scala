@@ -225,20 +225,20 @@ object SparkApp {
       map(t => Transaction.parseTarget(t, Transaction.parse(t, currency, mccDict))).
       filter(t => t.time.isDefined)
 
-    /*
+
     val testText = rddText(testFile,filter, split)
 
       val test = testText.
         filter(t => t.size > 2).
-        map(t => Transaction.parse(t, currency)).
+        map(t => Transaction.parse(t, currency, mccDict)).
         filter(t => t.time.isDefined)
-    */
+
     val trainDF = setMinDate(train).filter(t => t.transactionDay.get <= Transaction.maxTransactionDay).toDF()
 
-    val testDF = spark.sparkContext.emptyRDD[Transaction].toDF//setMinDate(test).filter(t => t.transactionDay.get <= Transaction.maxTransactionDay).toDF()
+    val testDF = setMinDate(test).filter(t => t.transactionDay.get <= Transaction.maxTransactionDay).toDF()
 
     println("Train count ======>" + trainText.count)
-    //println("Test count ======>" + testText.count)
+    println("Test count ======>" + testText.count)
 
     (trainDF, testDF)
   }

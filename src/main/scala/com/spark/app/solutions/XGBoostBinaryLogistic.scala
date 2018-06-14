@@ -17,7 +17,6 @@ import ml.dmlc.xgboost4j.scala.spark.{XGBoostEstimator, XGBoostClassificationMod
 import scala.collection.mutable.HashMap
 
 import com.spark.app.SparkApp
-import org.apache.spark.ml.param.ParamMap
 
 class XGBoostBinaryLogistic(private val spark : SparkSession) {
 	
@@ -76,7 +75,7 @@ class XGBoostBinaryLogistic(private val spark : SparkSession) {
     params += "colsample_bylevel" -> 1
     params += "objective" -> "binary:logistic"
     params += "num_class" -> 2
-    params += "booster" -> "gbtree"
+    params += "booster" -> "dart"
     params += "num_rounds" -> 20
     params += "nWorkers" -> 3
     return params
@@ -86,7 +85,7 @@ class XGBoostBinaryLogistic(private val spark : SparkSession) {
 
     val trainFeaturesDF = trainData.
       toDF("clientId", "label", "features")
-    val Array(trainDF, testDF) = trainFeaturesDF.randomSplit(Array(0.8, 0.2))
+    val Array(trainDF, testDF) = trainFeaturesDF.randomSplit(Array(trainDataPart, 1 - trainDataPart))
 
     val xgb = new XGBoostEstimator(get_param().toMap).
       setLabelCol("label").
@@ -95,13 +94,14 @@ class XGBoostBinaryLogistic(private val spark : SparkSession) {
 
     val xgbParamGrid = (new ParamGridBuilder()
       .addGrid(xgb.round, Array(2000))
-      .addGrid(xgb.maxDepth, Array(2, 3))
+      .addGrid(xgb.maxDepth, Array(3))
       .addGrid(xgb.maxBins, Array(2))
-      .addGrid(xgb.minChildWeight, Array(0.1, 0.3))
-      .addGrid(xgb.alpha, Array(0.4, 0.6))
-      .addGrid(xgb.lambda, Array(0.6 , 0.8))
-      .addGrid(xgb.subSample, Array(0.5))
-      .addGrid(xgb.eta, Array(0.005, 0.01))
+      .addGrid(xgb.gamma, Array(0.0))
+      .addGrid(xgb.minChildWeight, Array(1.0, 3.0))
+      .addGrid(xgb.alpha, Array(0.6))//checked
+      .addGrid(xgb.lambda, Array(0.8))//checked
+      .addGrid(xgb.subSample, Array(0.5))//checked
+      .addGrid(xgb.eta, Array(0.001))
       .build())
 
     val pipeline = new Pipeline().setStages(Array(xgb))
